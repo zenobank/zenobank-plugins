@@ -2,7 +2,8 @@
 defined('ABSPATH') || exit;
 
 /**
- * Register REST route (Woo-style).
+ * Register REST route for Zeno payment webhook.
+ * Public by design (Zeno POSTs here); auth via verificationToken in callback.
  */
 function zc_edd_register_webhook_route()
 {
@@ -23,11 +24,10 @@ function zc_edd_register_webhook_route()
 }
 
 /**
- * Handle Zeno webhook.
+ * Handle Zeno webhook. Auth via verificationToken (checked in callback).
  */
 function zc_edd_handle_webhook(WP_REST_Request $request)
 {
-
 	$body = $request->get_json_params();
 	if (empty($body) || ! is_array($body)) {
 		$body = array();
