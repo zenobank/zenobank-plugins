@@ -4,7 +4,7 @@ Tags: cryptocurrency, crypto, crypto wallet, accept crypto, binance pay
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.12
+Stable tag: 1.1.0
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -39,6 +39,15 @@ Questions? Check the [FAQs](https://zenobank.io/#faqs)
 8. Save changes, enable the gateway, and start accepting crypto payments.
 
 == Changelog ==
+
+= 1.1.0 =
+
+* Added Test Mode: when enabled, the checkout is only visible to admins
+* Added configurable order status after successful payment
+* Added configurable order status when checkout expires
+* Added configurable order status when payment is initiated
+* Added checkout logo picker with multiple built-in options and custom URL support
+* Fixed checkout logo sizing to prevent oversized images in classic and block checkout
 
 = 1.0.12 =
 

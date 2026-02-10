@@ -52,7 +52,7 @@ class ZCPG_Blocks_Gateway extends AbstractPaymentMethodType
             'zcpg-blocks',
             plugins_url('assets/js/blocks.js', __FILE__),
             ['wc-blocks-registry', 'wc-settings', 'wp-element'],
-            '1.0.11',
+            '1.1.0',
             true
         );
         return ['zcpg-blocks'];

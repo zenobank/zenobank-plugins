@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Zeno Crypto Checkout
  * Description: Accept Crypto Payments in USDT and USDC across Ethereum, BNB Chain, Arbitrum, Base, Polygon, Solana, and Binance Pay
- * Version: 1.0.12
+ * Version: 1.1.0
  * Author: Zeno Bank
  * Requires at least: 6.0
  * Requires PHP: 7.4
@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) exit;
 define('ZCPG_PLUGIN_FILE', __FILE__);
 define('ZCPG_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('ZCPG_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('ZCPG_VERSION', '1.0.12');
+define('ZCPG_VERSION', '1.1.0');
 define('ZCPG_API_ENDPOINT', 'https://api.zenobank.io');
 
 
