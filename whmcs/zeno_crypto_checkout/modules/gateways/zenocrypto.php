@@ -133,22 +133,28 @@ function zenocrypto_link($params)
 
     $response = curl_exec($curl);
     $err = curl_error($curl);
+    $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
 
     curl_close($curl);
 
     if ($err) {
-        return '<div class="alert alert-danger">cURL Error #:' . $err . '</div>';
-    } else {
-        $result = json_decode($response);
-        if (!is_object($result) || empty($result->checkoutUrl)) {
-            return '<div class="alert alert-danger">Could not create checkout. Please try again.</div>';
-        }
-
-        $url = htmlspecialchars($result->checkoutUrl, ENT_QUOTES, 'UTF-8');
-        $htmlOutput = '<form method="get" action="' . $url . '">';
-        $htmlOutput .= '<input type="submit" value="' . $langPayNow . '" />';
-        $htmlOutput .= '</form>';
-
-        return $htmlOutput;
+        return '<div class="alert alert-danger">cURL Error: ' . htmlspecialchars($err, ENT_QUOTES, 'UTF-8') . '</div>';
     }
+
+    if ($httpCode < 200 || $httpCode >= 300) {
+        logTransaction('zenocrypto', $response, 'API error HTTP ' . $httpCode);
+        return '<div class="alert alert-danger">Payment gateway returned an error (HTTP ' . $httpCode . '). Please try again.</div>';
+    }
+
+    $result = json_decode($response);
+    if (!is_object($result) || empty($result->checkoutUrl)) {
+        return '<div class="alert alert-danger">Could not create checkout. Please try again.</div>';
+    }
+
+    $url = htmlspecialchars($result->checkoutUrl, ENT_QUOTES, 'UTF-8');
+    $htmlOutput = '<form method="get" action="' . $url . '">';
+    $htmlOutput .= '<input type="submit" value="' . htmlspecialchars($langPayNow, ENT_QUOTES, 'UTF-8') . '" />';
+    $htmlOutput .= '</form>';
+
+    return $htmlOutput;
 }

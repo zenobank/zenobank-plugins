@@ -39,6 +39,12 @@ if (!is_array($data)) {
 // Debug
 //logActivity('Raw Data: '.$rawBody, 0);
 
+if (!isset($data['data']) || !is_array($data['data'])) {
+    logTransaction($gatewayParams['name'], $rawBody, 'Invalid payload: missing data object');
+    http_response_code(400);
+    exit('Invalid payload');
+}
+
 $status = $data['data']['status'] ?? '';
 
 if ($status !== 'COMPLETED') {
@@ -47,10 +53,19 @@ if ($status !== 'COMPLETED') {
     exit('OK');
 }
 
+$requiredFields = ['orderId', 'id', 'verificationToken'];
+foreach ($requiredFields as $field) {
+    if (!isset($data['data'][$field])) {
+        logTransaction($gatewayParams['name'], $rawBody, 'Missing required field: ' . $field);
+        http_response_code(400);
+        exit('Missing required field: ' . $field);
+    }
+}
+
 $invoiceId = $data['data']['orderId'];
 $transactionId = $data['data']['id'];
-$paymentAmount = $data['data']['priceAmount'];
-$currencyCode = $data['data']['priceCurrency'];
+$paymentAmount = $data['data']['priceAmount'] ?? '';
+$currencyCode = $data['data']['priceCurrency'] ?? '';
 $paymentFee = 0;
 $hash = $data['data']['verificationToken'];
 
