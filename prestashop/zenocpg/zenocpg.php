@@ -76,6 +76,10 @@ class Zenocpg extends PaymentModule
         $this->addOrderStateZenoAccepted('ZENO payment accepted');
         $this->addOrderStateZenoExpired('ZENO payment expired');
 
+        Configuration::updateValue('ZENO_CPG_OS_WAITING', (int) Configuration::getGlobalValue('ZENO_WAITING_PAYMENT'));
+        Configuration::updateValue('ZENO_CPG_OS_COMPLETED', (int) Configuration::getGlobalValue('ZENO_PAYMENT_ACCEPTED'));
+        Configuration::updateValue('ZENO_CPG_OS_EXPIRED', (int) Configuration::getGlobalValue('ZENO_PAYMENT_EXPIRED'));
+
         require_once __DIR__ . '/sql/install.php';
 
         return parent::install()
@@ -97,6 +101,9 @@ class Zenocpg extends PaymentModule
         Configuration::deleteByName('ZENO_WAITING_PAYMENT');
         Configuration::deleteByName('ZENO_PAYMENT_ACCEPTED');
         Configuration::deleteByName('ZENO_PAYMENT_EXPIRED');
+        Configuration::deleteByName('ZENO_CPG_OS_WAITING');
+        Configuration::deleteByName('ZENO_CPG_OS_COMPLETED');
+        Configuration::deleteByName('ZENO_CPG_OS_EXPIRED');
 
         return parent::uninstall();
     }
@@ -120,6 +127,10 @@ class Zenocpg extends PaymentModule
             $this->output .= '<br />';
         }
 
+        if (!Configuration::get('ZENO_CPG_API_KEY')) {
+            $this->output .= $this->displayWarning($this->l('Please enter your API Key to start accepting payments. Get your API key at https://dashboard.zenobank.io/'));
+        }
+
         $this->context->smarty->assign('module_dir', $this->_path);
 
         $this->output .= $this->context->smarty->fetch($this->local_path . 'views/templates/admin/configure.tpl');
@@ -130,7 +141,8 @@ class Zenocpg extends PaymentModule
     protected function _postValidation()
     {
         if (Tools::isSubmit('submitZenocpgModule')) {
-            if (!Tools::getValue('ZENO_CPG_API_KEY')) {
+            $apiKeyValue = Tools::getValue('ZENO_CPG_API_KEY');
+            if (!$apiKeyValue && !Configuration::get('ZENO_CPG_API_KEY')) {
                 $this->_postErrors[] = $this->trans(
                     'API Key are required.',
                     [],
@@ -173,12 +185,12 @@ class Zenocpg extends PaymentModule
         $helper->token = Tools::getAdminTokenLite('AdminModules');
 
         $helper->tpl_vars = [
-            'fields_value' => $this->getConfigFormValuesSecure(), /* Add values for your inputs */
+            'fields_value' => $this->getConfigFormValues(),
             'languages' => $this->context->controller->getLanguages(),
             'id_language' => $this->context->language->id,
         ];
 
-        return $helper->generateForm([$this->getConfigForm()]);
+        return $helper->generateForm([$this->getConfigForm(), $this->getAdvancedConfigForm()]);
     }
 
     /**
@@ -214,7 +226,7 @@ class Zenocpg extends PaymentModule
                     ],
                     [
                         'col' => 5,
-                        'type' => 'text',
+                        'type' => 'password',
                         'name' => 'ZENO_CPG_API_KEY',
                         'placeholder' => 'Enter your API key',
                         'label' => $this->l('API Key'),
@@ -246,6 +258,63 @@ class Zenocpg extends PaymentModule
         ];
     }
 
+    protected function getAdvancedConfigForm()
+    {
+        $order_states = $this->getOrderStateOptions();
+
+        return [
+            'form' => [
+                'legend' => [
+                    'title' => $this->l('Advanced'),
+                    'icon' => 'icon-cog',
+                ],
+                'input' => [
+                    [
+                        'type' => 'select',
+                        'label' => $this->l('Order created status'),
+                        'name' => 'ZENO_CPG_OS_WAITING',
+                        'desc' => $this->l('Order status when the order is created and awaiting payment.'),
+                        'options' => [
+                            'query' => $order_states,
+                            'id' => 'id_order_state',
+                            'name' => 'name',
+                        ],
+                    ],
+                    [
+                        'type' => 'select',
+                        'label' => $this->l('Payment completed status'),
+                        'name' => 'ZENO_CPG_OS_COMPLETED',
+                        'desc' => $this->l('Order status when the payment has been completed.'),
+                        'options' => [
+                            'query' => $order_states,
+                            'id' => 'id_order_state',
+                            'name' => 'name',
+                        ],
+                    ],
+                    [
+                        'type' => 'select',
+                        'label' => $this->l('Checkout expired status'),
+                        'name' => 'ZENO_CPG_OS_EXPIRED',
+                        'desc' => $this->l('Order status when the checkout has expired.'),
+                        'options' => [
+                            'query' => $order_states,
+                            'id' => 'id_order_state',
+                            'name' => 'name',
+                        ],
+                    ],
+                ],
+                'submit' => [
+                    'title' => $this->l('Save'),
+                ],
+            ],
+        ];
+    }
+
+    protected function getOrderStateOptions()
+    {
+        return OrderState::getOrderStates((int) $this->context->language->id);
+    }
+
     /**
      * Set values for the inputs.
      */
@@ -256,16 +325,9 @@ class Zenocpg extends PaymentModule
             'ZENO_CPG_TITLE' => Configuration::get('ZENO_CPG_TITLE', null),
             'ZENO_CPG_DESCRIPTION' => Configuration::get('ZENO_CPG_DESCRIPTION', null),
             'ZENO_CPG_API_KEY' => Configuration::get('ZENO_CPG_API_KEY', null),
-        ];
-    }
-
-    protected function getConfigFormValuesSecure()
-    {
-        return [
-            'ZENO_CPG_LIVE_MODE' => Configuration::get('ZENO_CPG_LIVE_MODE', null),
-            'ZENO_CPG_TITLE' => Configuration::get('ZENO_CPG_TITLE', null),
-            'ZENO_CPG_DESCRIPTION' => Configuration::get('ZENO_CPG_DESCRIPTION',null),
-            'ZENO_CPG_API_KEY' => '************',
+            'ZENO_CPG_OS_WAITING' => Configuration::get('ZENO_CPG_OS_WAITING') ?: Configuration::getGlobalValue('ZENO_WAITING_PAYMENT'),
+            'ZENO_CPG_OS_COMPLETED' => Configuration::get('ZENO_CPG_OS_COMPLETED') ?: Configuration::getGlobalValue('ZENO_PAYMENT_ACCEPTED'),
+            'ZENO_CPG_OS_EXPIRED' => Configuration::get('ZENO_CPG_OS_EXPIRED') ?: Configuration::getGlobalValue('ZENO_PAYMENT_EXPIRED'),
         ];
     }
 
@@ -277,6 +339,13 @@ class Zenocpg extends PaymentModule
         $form_values = $this->getConfigFormValues();
 
         foreach (array_keys($form_values) as $key) {
+            if ($key === 'ZENO_CPG_API_KEY') {
+                $value = Tools::getValue($key);
+                if ($value) {
+                    Configuration::updateValue($key, $value);
+                }
+                continue;
+            }
             Configuration::updateValue($key, Tools::getValue($key));
         }
     }

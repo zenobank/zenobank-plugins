@@ -31,28 +31,34 @@ class ZenocpgWebhookModuleFrontController extends ModuleFrontController
 {
     public function postProcess()
     {
-        if (!isset($_POST['data'])) {
-            exit;
+        $body = json_decode(file_get_contents('php://input'), true);
+        if (!isset($body['data'])) {
+            $this->respondJson(['error' => 'Missing data'], 400);
         }
 
-        $data = $_POST['data'];
-        $id_cart = $data['orderId'];
-        $order_status_back = $data['status'];
-        $verification_token_back = $data['verificationToken'];
+        $data = $body['data'];
+        $id_cart = $data['orderId'] ?? null;
+        $order_status_back = $data['status'] ?? null;
+        $verification_token_back = $data['verificationToken'] ?? null;
+
+        if (!$id_cart || !$order_status_back || !$verification_token_back) {
+            $this->respondJson(['error' => 'Missing required fields'], 400);
+        }
 
         $status_map = [
-            'COMPLETED' => (int) Configuration::get('ZENO_PAYMENT_ACCEPTED') ?: (int) Configuration::get('PS_OS_PAYMENT'),
-            'EXPIRED' => (int) Configuration::get('ZENO_PAYMENT_EXPIRED') ?: (int) Configuration::get('PS_OS_ERROR'),
+            'COMPLETED' => (int) Configuration::get('ZENO_CPG_OS_COMPLETED') ?: (int) Configuration::getGlobalValue('ZENO_PAYMENT_ACCEPTED') ?: (int) Configuration::get('PS_OS_PAYMENT'),
+            'EXPIRED' => (int) Configuration::get('ZENO_CPG_OS_EXPIRED') ?: (int) Configuration::getGlobalValue('ZENO_PAYMENT_EXPIRED') ?: (int) Configuration::get('PS_OS_ERROR'),
         ];
 
         if (!isset($status_map[$order_status_back])) {
-            exit;
+            PrestaShopLogger::addLog('Zeno webhook: unknown status "' . pSQL($order_status_back) . '" for cart ' . (int) $id_cart, 2);
+            $this->respondJson(['message' => 'Unknown status, ignored'], 200);
         }
 
         $sql = 'SELECT id_cart FROM ' . _DB_PREFIX_ . 'cart WHERE id_cart = "' . (int) $id_cart . '"';
         $id_cart = Db::getInstance()->getValue($sql);
         if (!$id_cart) {
-            exit;
+            $this->respondJson(['error' => 'Cart not found'], 404);
         }
 
         $cart = new Cart((int) $id_cart);
@@ -62,15 +68,24 @@ class ZenocpgWebhookModuleFrontController extends ModuleFrontController
         $verification_token = hash_hmac('sha256', (string) $id_cart, $secure_key);
 
         if ($verification_token !== $verification_token_back) {
-            exit;
+            $this->respondJson(['error' => 'Invalid verification token'], 401);
         }
 
         $id_order = Order::getIdByCartId((int) $id_cart);
         if (!$id_order) {
-            exit;
+            $this->respondJson(['error' => 'Order not found'], 404);
         }
 
         $this->updateOrderStatus((int) $id_order, $status_map[$order_status_back]);
+        $this->respondJson(['success' => true], 200);
+    }
+
+    private function respondJson(array $data, int $status_code)
+    {
+        http_response_code($status_code);
+        header('Content-Type: application/json');
+        echo json_encode($data);
+        exit;
     }
 
     public function updateOrderStatus($id_order, $new_status)
