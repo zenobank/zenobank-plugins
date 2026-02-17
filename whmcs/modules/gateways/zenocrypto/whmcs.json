@@ -5,7 +5,7 @@
   "category": "payments",
   "description": {
     "name": "Zeno Crypto Gateway",
-    "tagline": "Web3 Crypto Checkout for WHMCS — USDT, USDC, BTC, Binance Pay and More. No KYC. Lowest fees."
+    "tagline": "Web3 Crypto Checkout for WHMCS. USDT, USDC, BTC, Binance Pay and More. No KYC. Lowest fees."
   },
   "logo": {
     "filename": "logo.png"
