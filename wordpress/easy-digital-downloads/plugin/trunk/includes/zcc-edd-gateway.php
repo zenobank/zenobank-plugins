@@ -23,14 +23,10 @@ add_filter(
 add_filter(
 	'edd_accepted_payment_icons',
 	function ($icons) {
-		$icons['znccedd'] = __('Zeno', 'zeno-crypto-checkout-for-easy-digital-downloads');
+		$icons[ZNCCEDD_PLUGIN_URL . 'images/checkout-logo.png'] = __('Zeno', 'zeno-crypto-checkout-for-easy-digital-downloads');
 		return $icons;
 	}
 );
-
-add_filter('edd_accepted_payment_zeno_image', function () {
-	return ZNCCEDD_PLUGIN_URL . 'assets/images/checkout-logo.png';
-});
 
 add_filter('edd_gateway_settings_url_znccedd', function () {
 	return admin_url('edit.php?post_type=download&page=edd-settings&tab=gateways&section=znccedd');
