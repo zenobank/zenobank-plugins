@@ -69,7 +69,12 @@ $hash = $data['data']['verificationToken'];
 /**
  * Validate callback authenticity.
  */
-$secretKey = $gatewayParams['secret_key'];
+// Read secret_key directly from DB because it's not declared in _config()
+// and getGatewayVariables() only returns declared config fields
+$secretKey = Capsule::table('tblpaymentgateways')
+    ->where('gateway', 'zenocrypto')
+    ->where('setting', 'secret_key')
+    ->value('value');
 
 if (empty($secretKey)) {
     logTransaction($gatewayParams['name'], $rawBody, 'Missing secret key');
@@ -100,7 +105,14 @@ $existing = Capsule::table('tblaccounts')
     ->first();
 
 if ($existing) {
-    logTransaction($gatewayParams['name'], $rawBody, 'Duplicate webhook (already processed)');
+    // Payment was recorded, but ensure the invoice is actually marked as Paid
+    $invoice = Capsule::table('tblinvoices')->where('id', $invoiceId)->first();
+    if ($invoice && $invoice->status !== 'Paid') {
+        Capsule::table('tblinvoices')->where('id', $invoiceId)->update(['status' => 'Paid']);
+        logTransaction($gatewayParams['name'], $rawBody, 'Duplicate webhook - invoice status corrected to Paid');
+    } else {
+        logTransaction($gatewayParams['name'], $rawBody, 'Duplicate webhook (already processed)');
+    }
     http_response_code(200);
     exit('OK');
 }
