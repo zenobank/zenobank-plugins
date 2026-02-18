@@ -418,6 +418,7 @@ wp-config.php
 .claude/*
 /whmcs/dist/
 /wordpress/easy-digital-downloads/dist/
+/prestashop/dist/
 
 # ---- Local WordPress Docker data ----
 /wordpress/wp_data/

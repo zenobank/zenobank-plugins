@@ -1,0 +1,15 @@
+{
+  "name": "zenopay-prestashop-plugin",
+  "private": true,
+  "version": "1.0.0",
+  "description": "PrestaShop Zeno Crypto Payment Gateway plugin",
+  "scripts": {
+    "build:zip": "tsx scripts/build.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.3",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}
