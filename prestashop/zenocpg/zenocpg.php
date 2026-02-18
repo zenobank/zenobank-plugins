@@ -228,9 +228,12 @@ class Zenocpg extends PaymentModule
                         'col' => 5,
                         'type' => 'password',
                         'name' => 'ZENO_CPG_API_KEY',
-                        'placeholder' => 'Enter your API key',
+                        'placeholder' => Configuration::get('ZENO_CPG_API_KEY') ? '••••••••••••••••' : 'Enter your API key',
                         'label' => $this->l('API Key'),
-                        'desc' => $this->l('Get your API key here: ') . '<a href="https://dashboard.zenobank.io/" target="_blank">https://dashboard.zenobank.io/</a>',
+                        'desc' => (Configuration::get('ZENO_CPG_API_KEY')
+                            ? '<span style="color: #72C279; font-weight: bold;">&#10004; ' . $this->l('API Key is configured.') . '</span> ' . $this->l('Leave empty to keep the current key, or enter a new one to replace it.') . '<br>'
+                            : '<span style="color: #E08F95; font-weight: bold;">&#10006; ' . $this->l('No API Key configured.') . '</span><br>')
+                            . $this->l('Get your API key here: ') . '<a href="https://dashboard.zenobank.io/" target="_blank">https://dashboard.zenobank.io/</a>',
                         'required' => true,
                     ],
                     [
@@ -337,16 +340,24 @@ class Zenocpg extends PaymentModule
     protected function postProcess()
     {
         $form_values = $this->getConfigFormValues();
+        $apiKeyUpdated = false;
 
         foreach (array_keys($form_values) as $key) {
             if ($key === 'ZENO_CPG_API_KEY') {
                 $value = Tools::getValue($key);
                 if ($value) {
                     Configuration::updateValue($key, $value);
+                    $apiKeyUpdated = true;
                 }
                 continue;
             }
             Configuration::updateValue($key, Tools::getValue($key));
+        }
+
+        if ($apiKeyUpdated) {
+            $this->output .= $this->displayConfirmation($this->l('Settings saved successfully. API Key has been updated.'));
+        } else {
+            $this->output .= $this->displayConfirmation($this->l('Settings saved successfully.'));
         }
     }
 
